@@ -10,7 +10,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +27,7 @@ public class DB_MySql implements DBAccessor {
             "Invalid URL - Cannot be null or empty string";
     private static final String PARAM_ERR = 
             "Insufficient Information Entered";
-    private static final String DRIVER_CLASS_NAME = "com.mysql.jdbc.Driver";
+    
 
     
     
@@ -36,17 +35,13 @@ public class DB_MySql implements DBAccessor {
     @Override
     public void openConnection(String driverClassName,String url, 
             String userName, String password) throws Exception {
+        
         if(url == null || url.length()==0){
         throw new IllegalArgumentException(URL_ERR);
         }
-        try{
         Class.forName(driverClassName);
-            
         conn = (Connection)DriverManager.getConnection(url, userName, password);
             System.out.println(conn.getProperties());
-        }catch (ClassNotFoundException | SQLException ex){
-        //What goes in here????
-        }
         
         }
 
@@ -59,7 +54,10 @@ public class DB_MySql implements DBAccessor {
         conn.close();
     }
 
-    public List<Map> simpleMenuQuery (List columnNames, String tableName) throws SQLException{
+    
+    
+    public List<Map> simpleMenuQuery (List columnNames, String tableName)
+            throws SQLException{
     final List list = new ArrayList();
     //create StringBuilder and start Query
     StringBuilder sqlStatement = new StringBuilder();
@@ -93,8 +91,7 @@ public class DB_MySql implements DBAccessor {
     try {
         
 	stmt = conn.createStatement();
-        //rs = stmt.executeQuery("Select item_id item_name item_price from menu");
-	rs = stmt.executeQuery(sqlQuery);
+        rs = stmt.executeQuery(sqlQuery);
 	metaData = rs.getMetaData();
 	final int fields=metaData.getColumnCount();
 
@@ -102,26 +99,26 @@ public class DB_MySql implements DBAccessor {
 		record = new LinkedHashMap();
 		for( int i=1; i <= fields; i++ ) {
 			try {
-                            record.put( metaData.getColumnName(i), rs.getObject(i) );
+                            record.put( metaData.getColumnName(i), 
+                                    rs.getObject(i) );
 			} catch(NullPointerException npe) { 
-			//Nothing has to be put in here - if it fails it doesn't matter
+			//Nothing has to be put in here 
                         }
 		} // end for
 		list.add(record);
-	} // end while
-
+                } // end while
+        stmt.close();
 	} catch (SQLException sqle) {
 		throw sqle;
 	} catch (Exception e) {
 		throw e;
 	} finally {
-//		try {
-//			stmt.close();
-//			//if(closeConnection) conn.close();
-//		} catch(SQLException e) {
-//				throw e;
-//		} // end try
-	} // end finally
+		try {
+                    conn.close();
+		} catch(SQLException e) {
+                    throw e;
+		} 
+	} 
     
     
     return list;
@@ -207,10 +204,11 @@ public class DB_MySql implements DBAccessor {
 			try {
                             record.put( metaData.getColumnName(i), rs.getObject(i) );
 			} catch(NullPointerException npe) { 
-			// no need to do anything... if it fails, just ignore it and continue
+			//nothing has to go in here
                         }
 		} // end for
 		list.add(record);
+                stmt.close();
 	} // end while
 
 	} catch (SQLException sqle) {
@@ -219,8 +217,8 @@ public class DB_MySql implements DBAccessor {
 		throw e;
 	} finally {
 		try {
-			stmt.close();
-			//if(closeConnection) conn.close();
+			
+			conn.close();
 		} catch(SQLException e) {
 				throw e;
 		} // end try
@@ -230,48 +228,216 @@ public class DB_MySql implements DBAccessor {
     return list;
     }
 
-    @Override
-    public List<Map> findRecordsFromMultipleTables() throws Exception {
-        throw new UnsupportedOperationException("Not supported yet.");
-    }
+    
 
     @Override
-    public Map getRecordByID(String table, String primaryKeyField, Object keyValue, boolean closeConnection) throws Exception {
+    public Map getRecordByID(String table, String primaryKeyField, 
+        Object keyValue, boolean closeConnection) throws Exception {
         Map record = null;
-        //PreparedStatement stmt = getPreparedStatement(table);
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM ").append(table).append(" WHERE ").append(primaryKeyField);
+        sql.append(" = ");
+        if (keyValue instanceof Number){
+        sql.append(keyValue);
+        }else{
+        sql.append("\'").append(keyValue).append("\'");
+        }
+        sql.append(";");
+        String finalSQL = sql.toString();
+       
+      
+    
+    try {
+        Statement stmt = null;
+        ResultSet rs = null;
+        stmt = conn.createStatement();
+        rs = stmt.executeQuery(finalSQL);
+        ResultSetMetaData metaData=null;
+	metaData = rs.getMetaData();
+	final int fields=metaData.getColumnCount();
         
-//if (primaryKeyValue instanceof Number){
-//    sql.append(primaryKeyValue);
-//    }else{
-//    sql.append("\'");
-//    sql.append(primaryKeyValue);
-//    sql.append("\'");
-//}   
-        
+
+        record = new LinkedHashMap();
+            if (rs.next()) {
+                for (int i = 1; i <= fields; i++) {
+
+                    try {
+
+                        record.put(metaData.getColumnName(i), rs.getObject(i));
+                    } catch (NullPointerException npe) {
+                        //nothing has to go here
+                    }
+                } // end for
+            }
+
+            stmt.close();
+        } catch (SQLException sqle) {
+            throw sqle;
+        } catch (Exception e) {
+            throw e;
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                throw e;
+            }
+        }
+
         return record;
     }
 
     @Override
-    public Boolean insertRecord(String tableName, List columnNames) throws Exception {
+    public Boolean insertRecord(String tableName, Map<String,Object> columnData)
+            throws Exception {
+        List columnNames = new ArrayList();
+        List columnValues = new ArrayList();
+        int recordsUpdated=0;
+        
+        PreparedStatement pstmt = null;
+        columnNames.addAll(columnData.keySet());
+        columnValues.addAll(columnData.values());
         
         
+        try{
+        pstmt = prepareInsertStatement(conn,tableName,columnNames);
+        int index = 1;
+        for(int i=0;i<columnValues.size();i++){
+            final Object obj = columnValues.get(i);
+            if (obj instanceof String) {
+                pstmt.setString(index++, (String) obj);
+            } else if (obj instanceof Integer) {
+                pstmt.setInt(index++, ((Integer) obj).intValue());
+            } else if (obj instanceof Long) {
+                pstmt.setLong(index++, ((Long) obj).longValue());
+            } else if (obj instanceof Double) {
+                pstmt.setDouble(index++, ((Double) obj).doubleValue());
+            } else if (obj instanceof java.sql.Date) {
+                pstmt.setDate(index++, (java.sql.Date) obj);
+            } else if (obj instanceof Boolean) {
+                pstmt.setBoolean(index++, ((Boolean) obj).booleanValue());
+            } else {
+                if (obj != null) {
+                    pstmt.setObject(index++, obj);
+                }
+            }
+        }
+            recordsUpdated = pstmt.executeUpdate();
+            pstmt.close();
+        } catch (SQLException ex) {
+            throw ex;
+        } finally {
+            try {
+                
+                conn.close();
+            } catch (SQLException e) {
+                throw e;
+			} 
+		} 
         
-        
-        
-        throw new UnsupportedOperationException("Not supported yet.");
+        if(recordsUpdated==1){
+            return true;
+        }else{
+            return false;
+        }
     }
 
     @Override
-    public int updateRecords(String tableName, List<Map<String, Object>> columnNamesAndValues, List<Map<String, Object>> whereClauseFieldNamesAndValues, boolean closeConnection) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public int updateRecords(String tableName, Map<String, Object> columnData,
+            String whereField, Object whereValue) throws Exception {
+        List columnNames = new ArrayList();
+        List columnValues = new ArrayList();
+        int recordsUpdated=0;
+        
+        PreparedStatement pstmt = null;
+        columnNames.addAll(columnData.keySet());
+        columnValues.addAll(columnData.values());  
+        try{
+        pstmt = prepareUpdateStatement(conn,tableName,columnNames,whereField);
+        int index = 1;
+        for(int i=0;i<columnValues.size();i++){
+            final Object obj = columnValues.get(i);
+            if (obj instanceof String) {
+                pstmt.setString(index++, (String) obj);
+            } else if (obj instanceof Integer) {
+                pstmt.setInt(index++, ((Integer) obj).intValue());
+            } else if (obj instanceof Long) {
+                pstmt.setLong(index++, ((Long) obj).longValue());
+            } else if (obj instanceof Double) {
+                pstmt.setDouble(index++, ((Double) obj).doubleValue());
+            } else if (obj instanceof java.sql.Date) {
+                pstmt.setDate(index++, (java.sql.Date) obj);
+            } else if (obj instanceof Boolean) {
+                pstmt.setBoolean(index++, ((Boolean) obj).booleanValue());
+            } else {
+                if (obj != null) {
+                    pstmt.setObject(index++, obj);
+                }
+            }
+        }
+        pstmt.setObject(index++,whereValue);
+            recordsUpdated = pstmt.executeUpdate();
+            pstmt.close();
+        } catch (SQLException ex) {
+            throw ex;
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                throw e;
+			} 
+		} 
+        return recordsUpdated;
+        
     }
 
     @Override
-    public int deleteRecords(String tableName, List<Map<String, Object>> whereClauseFieldNamesAndValues, boolean closeConnection) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public int deleteRecords(String tableName, String whereField, 
+            Object whereValue) throws Exception {
+        int numberDeleted=0;
+        PreparedStatement pstmt = null;
+        try {
+	 pstmt = prepareDeleteStatement(conn,tableName,whereField);
+        
+
+            // delete all records if whereField is null
+            if (whereField != null) {
+                if (whereValue instanceof String) {
+                    pstmt.setString(1, (String) whereValue);
+                } else if (whereValue instanceof Number) {
+                    pstmt.setInt(1, ((Number) whereValue).intValue());
+                } else if (whereValue instanceof java.sql.Date) {
+                    pstmt.setDate(1, (java.sql.Date) whereValue);
+                } else if (whereValue instanceof Boolean) {
+                    pstmt.setBoolean(1, ((Boolean) whereValue).booleanValue());
+                } else {
+                    if (whereValue != null) {
+                        pstmt.setObject(1, whereValue);
+                    }
+                }
+            }
+
+			numberDeleted = pstmt.executeUpdate();
+                        pstmt.close();
+		} catch (SQLException sqle) {
+			throw sqle;
+		} catch (Exception e) {
+			throw e;
+		} finally {
+			try {
+			conn.close();
+			} catch(SQLException e) {
+				throw e;
+			} // end try
+		} // end finally
+
+		return numberDeleted;
+        
     }
     
-    private PreparedStatement prepareUpdateStatement(Connection connection,String tableName, List columnNames) throws SQLException{
+    private PreparedStatement prepareInsertStatement
+        (Connection connection,String tableName, List columnNames)
+                throws SQLException{
+        
         if (columnNames.isEmpty()){
         //if column Names is empty throw some type of exception
         }
@@ -291,24 +457,71 @@ public class DB_MySql implements DBAccessor {
         final String finalSQL = sql.toString();
         System.out.println(finalSQL);
         return connection.prepareStatement(finalSQL);
+       
+    }
+        
+        private PreparedStatement prepareUpdateStatement(Connection connection,
+                String tableName, List columnNames, String whereField) 
+                throws SQLException{
+            
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(tableName).append(" SET ");
+        for (int i = 0;i <columnNames.size();i++){
+        sql.append(columnNames.get(i)).append(" = ?, ");
+        }
+        sql.delete(sql.length()-2,sql.length());
+        sql.append(" WHERE ").append(whereField).append(" = ?;");
+            
+        final String finalSQL = sql.toString();
+        System.out.println(finalSQL);
+        return connection.prepareStatement(finalSQL);
+        }
     
-
+    private PreparedStatement prepareDeleteStatement(Connection connection,
+            String tableName, String whereField) throws Exception{
+        
+        if(whereField==null){
+            //I have this in here to make sure all the contents 
+            //of a table aren't deleted on accident
+            throw new Exception();
+        }else{
+        
+        StringBuilder sql = new StringBuilder("DELETE FROM ");
+        sql.append(tableName);
+        sql.append(" WHERE ");
+        sql.append(whereField).append(" = ?;");
+        
+        final String finalSQL = sql.toString();
+        System.out.println(finalSQL);
+        return connection.prepareStatement(finalSQL);    
+        }
     
     }
    
     public static void main(String[] args) throws Exception {
         DB_MySql db = new DB_MySql();
-        List <Map> results = new ArrayList();
-        List list = new ArrayList();
-        list.add("item_id");
-        list.add("item_name");
-        list.add("item_price");
-        String tableName = "menu";
+//        LinkedHashMap record = (LinkedHashMap) db.getRecordByID("menu","item_id", 7, true);
+//        System.out.println(record);
+//        List <Map> results = new ArrayList();
+//        List list = new ArrayList();
+//        list.add("item_id");
+//        list.add("item_name");
+//        list.add("item_price");
+//        String tableName = "menu";
+//        String whereField = "item_id";
+//        Map<String,Object> map = new LinkedHashMap<>();
+//        map.put("item_name", "Bucket of Chicken");
+//        map.put("item_price", 19.99);
         db.openConnection( "com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/restaurant", "root", "admin");
-        Class.forName("com.mysql.jdbc.Driver");
-            
-        Connection connection = (Connection)DriverManager.getConnection("jdbc:mysql://localhost:3306/restaurant", "root", "admin");
-            //System.out.println(conn.getProperties());
+//        Boolean insertRecord = db.insertRecord(tableName, map);
+//        System.out.println(insertRecord);
+        //Class.forName("com.mysql.jdbc.Driver");
+        Map <String,Object> map = new LinkedHashMap();
+        map.put("item_name", "updated Name");
+        //Connection connection = (Connection)DriverManager.getConnection("jdbc:mysql://localhost:3306/restaurant", "root", "admin");
+        int noDelete = db.updateRecords("menu",map,"item_id", 3);
+        //System.out.println(record);
+        //System.out.println(conn.getProperties());
 //        results = db.simpleMenuQuery(list, tableName);
 //        for (int i = 0;i<results.size();i++){
 //            Map map = results.get(i);
@@ -319,8 +532,8 @@ public class DB_MySql implements DBAccessor {
 //            System.out.print("Item Price");
             //Decimal itemPrice = (Decimal) map.get("item_price");
             //System.out.print(itemPrice+"\n");
-        PreparedStatement stmt = db.prepareUpdateStatement(connection,tableName, list);
-        System.out.println(stmt.toString());
+//        PreparedStatement stmt = db.prepareUpdateStatement(connection,tableName,list, whereField);
+//        System.out.println(stmt.toString());
            
     }
     }

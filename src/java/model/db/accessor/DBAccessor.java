@@ -49,13 +49,7 @@ public interface DBAccessor {
     
     
     
-    /**
-     * Undeveloped.  This is a method for finding records where information is
-     * stored in multiple tables and requires a join statement
-     * @return a list of maps representing the records
-     * @throws Exception
-     */     
-    public abstract List <Map> findRecordsFromMultipleTables() throws Exception;
+    
 
     /**
      * Method to retrieve a record using the primary key of the table
@@ -76,12 +70,14 @@ public interface DBAccessor {
     /**
      * Method used to insert a record into a single table
      * @param tableName String representing the table name
+     * @param columnData
      * @param columnNames
+     * @param columnValues
      * @return a boolean indicating whether record was inserted
      * @throws Exception
      */
     public abstract Boolean insertRecord(String tableName, 
-            List columnNames)throws Exception;
+            Map<String,Object> columnData)throws Exception;
 
     /**
      * Method used to update certain columns of a record based upon criteria in
@@ -89,6 +85,8 @@ public interface DBAccessor {
      * @param tableName - String representing name of table
      * @param columnNamesAndValues - a list of maps representing the column names
      * and values to be updated within those columns
+     * @param whereField
+     * @param whereValue
      * @param whereClauseFieldNamesAndValues a list of maps representing the
      * where field names and values to be used in selecting which records 
      * should be updated
@@ -97,9 +95,8 @@ public interface DBAccessor {
      * @return number of records updated
      * @throws Exception
      */
-    public int updateRecords(String tableName, List<Map<String,Object>> 
-            columnNamesAndValues,List<Map<String,Object>> 
-                    whereClauseFieldNamesAndValues,boolean closeConnection)
+    public int updateRecords(String tableName, Map<String, Object> columnData,
+            String whereField, Object whereValue)
             throws Exception;
 
     /**
@@ -112,7 +109,6 @@ public interface DBAccessor {
      * @return number of records deleted
      * @throws Exception
      */
-    public abstract int deleteRecords(String tableName, List<Map<String,Object>> 
-                    whereClauseFieldNamesAndValues, boolean closeConnection)
+    public abstract int deleteRecords(String tableName, String whereField, Object whereValue)
 	throws Exception;
 }

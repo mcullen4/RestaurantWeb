@@ -4,11 +4,13 @@ package model.db.accessor;
 
 import com.mysql.jdbc.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,9 @@ public class DB_MySql implements DBAccessor {
             "Insufficient Information Entered";
     private static final String DRIVER_CLASS_NAME = "com.mysql.jdbc.Driver";
 
+    
+    
+    
     @Override
     public void openConnection(String driverClassName,String url, 
             String userName, String password) throws Exception {
@@ -45,6 +50,10 @@ public class DB_MySql implements DBAccessor {
         
         }
 
+    
+    
+    
+    
     @Override
     public void closeConnection() throws Exception {
         conn.close();
@@ -95,7 +104,7 @@ public class DB_MySql implements DBAccessor {
 			try {
                             record.put( metaData.getColumnName(i), rs.getObject(i) );
 			} catch(NullPointerException npe) { 
-			// no need to do anything... if it fails, just ignore it and continue
+			//Nothing has to be put in here - if it fails it doesn't matter
                         }
 		} // end for
 		list.add(record);
@@ -223,17 +232,33 @@ public class DB_MySql implements DBAccessor {
 
     @Override
     public List<Map> findRecordsFromMultipleTables() throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
     public Map getRecordByID(String table, String primaryKeyField, Object keyValue, boolean closeConnection) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Map record = null;
+        //PreparedStatement stmt = getPreparedStatement(table);
+        
+//if (primaryKeyValue instanceof Number){
+//    sql.append(primaryKeyValue);
+//    }else{
+//    sql.append("\'");
+//    sql.append(primaryKeyValue);
+//    sql.append("\'");
+//}   
+        
+        return record;
     }
 
     @Override
-    public Boolean insertRecord(String tableName, List<Map<String, Object>> columnNamesAndValues, boolean closeConnection) throws Exception {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Boolean insertRecord(String tableName, List columnNames) throws Exception {
+        
+        
+        
+        
+        
+        throw new UnsupportedOperationException("Not supported yet.");
     }
 
     @Override
@@ -246,6 +271,30 @@ public class DB_MySql implements DBAccessor {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
+    private PreparedStatement prepareUpdateStatement(Connection connection,String tableName, List columnNames) throws SQLException{
+        if (columnNames.isEmpty()){
+        //if column Names is empty throw some type of exception
+        }
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(tableName).append(" (");
+        for (int i = 0;i <columnNames.size();i++){
+        sql.append(columnNames.get(i)).append(", ");
+        }
+        sql.delete(sql.length()-2,sql.length());
+        sql.append(") VALUES (");
+        for (int a=0;a< columnNames.size();a++){
+        sql.append("?, ");
+        
+        }
+        sql.delete(sql.length()-2, sql.length());
+        sql.append(");");
+        final String finalSQL = sql.toString();
+        System.out.println(finalSQL);
+        return connection.prepareStatement(finalSQL);
+    
+
+    
+    }
    
     public static void main(String[] args) throws Exception {
         DB_MySql db = new DB_MySql();
@@ -255,23 +304,27 @@ public class DB_MySql implements DBAccessor {
         list.add("item_name");
         list.add("item_price");
         String tableName = "menu";
-        db.openConnection( "com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/restaurant", "root", "Skt072317");
-        results = db.simpleMenuQuery(list, tableName);
-        for (int i = 0;i<results.size();i++){
-            Map map = results.get(i);
-            System.out.print("Item ID:  ");
-            System.out.print(map.get("item_id")+"\n");
-            System.out.print("Item Description:  ");
-            System.out.print(map.get("item_name")+"\n");
-            System.out.print("Item Price");
+        db.openConnection( "com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/restaurant", "root", "admin");
+        Class.forName("com.mysql.jdbc.Driver");
+            
+        Connection connection = (Connection)DriverManager.getConnection("jdbc:mysql://localhost:3306/restaurant", "root", "admin");
+            //System.out.println(conn.getProperties());
+//        results = db.simpleMenuQuery(list, tableName);
+//        for (int i = 0;i<results.size();i++){
+//            Map map = results.get(i);
+//            System.out.print("Item ID:  ");
+//            System.out.print(map.get("item_id")+"\n");
+//            System.out.print("Item Description:  ");
+//            System.out.print(map.get("item_name")+"\n");
+//            System.out.print("Item Price");
             //Decimal itemPrice = (Decimal) map.get("item_price");
             //System.out.print(itemPrice+"\n");
+        PreparedStatement stmt = db.prepareUpdateStatement(connection,tableName, list);
+        System.out.println(stmt.toString());
            
     }
     }
     
     
     
-    
-    
-}
+

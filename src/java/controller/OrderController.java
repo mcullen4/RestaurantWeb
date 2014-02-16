@@ -7,30 +7,21 @@
 package controller;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.servlet.RequestDispatcher;
+import java.io.PrintWriter;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import model.service.MenuItem;
-import model.service.MenuService;
+import model.service.ITaxCalculator;
+import model.service.ITipCalculator;
 
 /**
  *
  * @author Michele
  */
-public class MenuController extends HttpServlet {
-
-    private final String FULL_MENU = "/micheletakeoutmenu.jsp";
-    private final String INPUT_KEY = "action";
-    private final String INPUT1 = "dinner";
-    private final String INPUT2 = "happyhour";
-    private final String INPUT3 = "sundaybrunch";
-    private final String destination=null;
+public class OrderController extends HttpServlet {
+private ITipCalculator tip;
+private ITaxCalculator tax;
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -42,37 +33,7 @@ public class MenuController extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-            response.setContentType("text/html;charset=UTF-8");
-        try {
-            //response.setContentType("text/html;charset=UTF-8");
-            
-            List <MenuItem> menu = null;
-            
-            MenuService order = new MenuService();
-            menu=order.getAllMenuItems();
-            request.setAttribute("menu",menu);
-
-//            String key = request.getParameter(INPUT_KEY);
-//            switch (key) {
-//                case INPUT1:
-//                    menu = order.getAllMenuItems();
-//                    request.setAttribute("menu", menu);
-//                    break;
-//                case INPUT2:
-//                    menu = order.getAllMenuItems();
-//                    request.setAttribute("menu", menu);
-//                    break;
-//                default:
-//                    menu = order.getAllMenuItems();
-//                    request.setAttribute("menu", menu);
-//                    break;
-//            }
-        } catch (Exception ex) {
-            Logger.getLogger(MenuController.class.getName()).log(Level.SEVERE, null, ex);
-        }
-       RequestDispatcher dispatcher = 
-                request.getRequestDispatcher(FULL_MENU);
-        dispatcher.forward(request, response);
+        response.setContentType("text/html;charset=UTF-8");
         
     }
 

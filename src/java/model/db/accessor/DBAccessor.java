@@ -76,16 +76,12 @@ public interface DBAccessor {
     /**
      * Method used to insert a record into a single table
      * @param tableName String representing the table name
-     * @param columnNamesAndValues a list of maps representing the column names
-     * and values
-     * @param closeConnection a boolean that indicates whether or not the 
-     * connection should be closed upon completion of the method
+     * @param columnNames
      * @return a boolean indicating whether record was inserted
      * @throws Exception
      */
     public abstract Boolean insertRecord(String tableName, 
-            List<Map<String,Object>> columnNamesAndValues, boolean 
-                    closeConnection)throws Exception;
+            List columnNames)throws Exception;
 
     /**
      * Method used to update certain columns of a record based upon criteria in

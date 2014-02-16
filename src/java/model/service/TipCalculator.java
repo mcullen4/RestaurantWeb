@@ -10,6 +10,13 @@ package model.service;
  *
  * @author Michele
  */
-public class OrderService {
+public class TipCalculator extends ITipCalculator {
+   private final static double TIP_PERCENT = .10;
+   
+   public double calculateSuggestedTip(double totalBill){
+   double suggestedTip = totalBill * TIP_PERCENT;
+   return suggestedTip;
+   }
+    
     
 }

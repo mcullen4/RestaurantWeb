@@ -46,8 +46,8 @@ out.println("<p>" + item.getMenuID() + "</p>");
 
 
 
-            <!--End of Content-->
+        </div>    <!--End of Content-->
             <div id="footer" class="footer"></div><!--End of footer-->
-        </div><!--End of Container-->
+        <!--End of Container-->
     </body>
 </html>

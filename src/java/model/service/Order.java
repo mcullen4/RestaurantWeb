@@ -6,10 +6,17 @@
 
 package model.service;
 
+import java.util.List;
+
 /**
  *
  * @author Michele
  */
-public class OrderService {
-    
+public class Order {
+   private int orderNumber;
+   private List<MenuItem> orderedItems;
+   private double taxAmount;
+   private double suggestedTipAmount;
+   private double actualTipAmount;
+   private Boolean delivery;
 }

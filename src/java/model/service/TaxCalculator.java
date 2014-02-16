@@ -10,6 +10,12 @@ package model.service;
  *
  * @author Michele
  */
-public class OrderService {
+public class TaxCalculator extends ITaxCalculator {
+    private final static double TAX_PERCENT = .055;
     
+    public double calculateTax(double totalBill){
+        double taxAmount = totalBill*TAX_PERCENT;
+            
+        return taxAmount;
+    }
 }

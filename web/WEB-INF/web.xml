@@ -4,9 +4,17 @@
         <servlet-name>MenuController</servlet-name>
         <servlet-class>controller.MenuController</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>OrderController</servlet-name>
+        <servlet-class>controller.OrderController</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>MenuController</servlet-name>
         <url-pattern>/menuControl</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>OrderController</servlet-name>
+        <url-pattern>/OrderController</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>
